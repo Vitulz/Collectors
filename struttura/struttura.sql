@@ -19,6 +19,10 @@ create table collezione (
     unique(nome, ID_collezionista)
 );
 
+create table genere (
+	nome varchar(50) primary key
+);
+
 create table disco (
 	ID int unsigned primary key auto_increment,
     titolo varchar(50) not null,
@@ -30,5 +34,18 @@ create table disco (
     foreign key (ID_collezione) references collezione(ID) on delete cascade on update cascade,
     unique(titolo, etichetta, annoUscita, ID_collezione)
 );
-    
-    
+
+create table formato (
+	nome varchar(50) primary key
+);
+
+create table copia (
+	ID int unsigned primary key auto_increment,
+    numeroBarcode int unsigned not null,
+    numeroCopia int unsigned,
+    nomeFormato varchar(50) not null,
+    ID_disco int unsigned not null,
+    foreign key (nomeFormato) references formato(nome) on delete restrict on update cascade,
+    foreign key (ID_disco) references disco(ID) on delete cascade on update cascade,
+    unique(numeroBarcode, ID_disco)
+);
