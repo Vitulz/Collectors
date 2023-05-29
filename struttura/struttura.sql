@@ -32,7 +32,8 @@ create table disco (
     ID_collezione int unsigned not null,
     foreign key (nomeGenere) references genere(nome) on delete restrict on update cascade,
     foreign key (ID_collezione) references collezione(ID) on delete cascade on update cascade,
-    unique(titolo, etichetta, annoUscita, ID_collezione)
+    unique(titolo, etichetta, annoUscita, ID_collezione),
+    check(annoUscita >= 1877)
 );
 
 create table formato (
@@ -41,11 +42,74 @@ create table formato (
 
 create table copia (
 	ID int unsigned primary key auto_increment,
-    numeroBarcode int unsigned not null,
+    numeroBarcode tinyint unsigned not null,
     numeroCopia int unsigned,
     nomeFormato varchar(50) not null,
     ID_disco int unsigned not null,
     foreign key (nomeFormato) references formato(nome) on delete restrict on update cascade,
     foreign key (ID_disco) references disco(ID) on delete cascade on update cascade,
     unique(numeroBarcode, ID_disco)
+);
+
+create table posizione (
+	nome varchar(50) primary key
+);
+
+create table immagine (
+	ID int unsigned primary key auto_increment,
+    url varchar(1000) not null,
+    dimensione smallint unsigned,
+    formato varchar(50),
+    risoluzione int unsigned,
+    nomePosizione varchar(50),
+    ID_copia int unsigned not null,
+    foreign key (nomePosizione) references posizione(nome) on delete restrict on update cascade,
+    foreign key (ID_copia) references copia(ID) on delete cascade on update cascade,
+    unique(ID_copia)
+);
+
+create table traccia (
+	ID int unsigned primary key auto_increment,
+    titolo varchar(50) not null,
+    durata time not null,
+    ID_disco int unsigned not null,
+    foreign key (ID_disco) references disco(ID) on delete cascade on update cascade,
+    unique(titolo, ID_disco)
+);
+
+create table artista (
+	ID int unsigned primary key auto_increment,
+    nomeArte varchar(50) not null,
+    biografia mediumtext,
+    unique(nomeArte)
+);
+
+create table ruolo (
+	nome varchar(50) primary key,
+    check (nome in ('compositore', 'cantante', 'musicista'))
+);
+
+create table condivisa (
+	ID_collezione int unsigned primary key,
+    ID_collezionista int unsigned primary key,
+    foreign key (ID_collezione) references collezione(ID) on delete cascade on update cascade,
+    foreign key (ID_collezionista) references collezionista(ID) on delete cascade on update cascade
+);
+
+create table autore (
+	ID_disco int unsigned primary key,
+    ID_artista int unsigned primary key,
+    nomeRuolo varchar(50) not null,
+    foreign key (ID_disco) references disco(ID) on delete cascade on update cascade,
+    foreign key (ID_artista) references artista(ID) on delete cascade on update cascade,
+    foreign key (nomeRuolo) references ruolo(nome) on delete restrict on update restrict
+);
+
+create table collaborazione (
+	ID_traccia int unsigned primary key,
+    ID_artista int unsigned primary key,
+    nomeRuolo varchar(50) not null,
+    foreign key (ID_traccia) references traccia(ID) on delete cascade on update cascade,
+    foreign key (ID_artista) references artista(ID) on delete cascade on update cascade,
+    foreign key (nomeRuolo) references ruolo(nome) on delete restrict on update restrict
 );
