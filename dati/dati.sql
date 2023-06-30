@@ -6,6 +6,7 @@ delete from formato;
 delete from posizione;
 delete from collaborazione;
 delete from autore;
+delete from artista;
 delete from ruolo;
 delete from traccia;
 delete from disco;
@@ -23,9 +24,10 @@ insert into collezionista (ID, nickname, email) values
 
 -- Popolazione tabella "collezione"
 insert into collezione (ID, nome, visibilta, ID_collezionista) values
-    (1, 'S playlist', 'pubblica', 1),
-    (2, 'Collezione 2', 'privata', 2),
-    (3, 'Collezione 3', 'privata', 1);
+    (1, 'S collezione 1', 'pubblica', 1),
+    (2, 'N collezione', 'privata', 2),
+    (3, 'S collezione 2', 'privata', 1),
+    (4, 'M collezione', 'pubblica', 3);
 
 -- Popolazione tabella "genere"
 insert into genere (nome) values
@@ -42,9 +44,9 @@ insert into genere (nome) values
 -- Popolazione tabella "disco"
 insert into disco (ID, titolo, etichetta, annoUscita, nomeGenere, ID_collezione) values
     (1, 'Raptus 3', 'VTNL Label', 2018, 'Rap', 1),
-    (2, 'Album 2', 'Etichetta 2', 1995, 'Pop', 1),
-    (3, 'Album 3', 'Etichetta 3', 1980, 'Jazz', 2),
-    (4,'Album 4', 'Etichetta 4', 2010, 'Rock', 3);
+    (2, 'Divina Commedia', 'Sony', 2023, 'Rap', 3),
+    (3, 'Famoso', 'BHMG', 2020, 'Trap', 2),
+    (4, 'Alpha Centauri', 'Universal', 2019, 'Hip Hop', 4);
 
 -- Popolazione tabella "formato"
 insert into formato (nome) values
@@ -55,9 +57,12 @@ insert into formato (nome) values
 -- Popolazione tabella "copia"
 insert into copia (ID, numeroBarcode, numeroCopia, nomeFormato, statoDiConservazione, ID_disco) values
     (1, '1230000000145', 1, 'Vinile', 'eccellente', 1),
-    (2, '9830000000143', 1, 'Vinile', 'buono', 2),
-    (3, '9880000000154', 1, 'CD', 'eccellente', 3),
-    (4, '8230000000754', 1, 'Digitale', 'nuovo', 4);
+	(2, '1230000000145', 2, 'Vinile', 'discreto', 1),
+    (3, '1230000000146', 3, 'CD', 'discreto', 1),
+    (4, '1230000000495', 1, 'Digitale', null, 2),
+    (5, '9830000000143', 1, 'Vinile', 'buono', 3),
+    (6, '9830000000144', 2, 'CD', 'eccellente', 3),
+    (7, '8230000000754', 1, 'Digitale', 'nuovo', 4);
 
 -- Popolazione tabella "posizione"
 insert into posizione (nome) values
@@ -68,50 +73,70 @@ insert into posizione (nome) values
     
 -- Popolazione tabella "immagine"
 insert into immagine (ID, url, dimensione, formato, nomePosizione, ID_copia) values
-    (1, 'http://example.com/image1.jpg', '800x600', 'JPEG', 'Fronte', 1),
-    (2, 'http://example.com/image2.png', '1024x768', 'PNG', 'Retro', 2),
-    (3, 'http://example.com/image3.gif', '640x480', 'GIF', 'Fronte', 3),
-    (4, 'http://example.com/image4.svg', '1280x720', 'SVG', 'Fronte', 4);
+    (1, 'http://example.com/image11.jpg', '800x600', 'JPEG', 'Fronte', 1),
+	(2, 'http://example.com/image12.jpg', '800x600', 'JPEG', 'Retro', 1),
+    (3, 'http://example.com/image13.jpg', '800x600', 'JPEG', 'Interno', 1),
+	(4, 'http://example.com/image21.jpg', '800x600', 'JPEG', 'Fronte', 2),
+	(5, 'http://example.com/image22.jpg', '800x600', 'JPEG', 'Retro', 2),
+	(6, 'http://example.com/image31.jpg', '800x600', 'JPEG', 'Fronte', 3),
+	(7, 'http://example.com/image32.jpg', '800x600', 'JPEG', 'Retro', 3),
+    (8, 'http://example.com/image41.png', '1024x768', 'SVG', null, 4),
+    (9, 'http://example.com/image51.gif', '640x480', 'GIF', 'Fronte', 5),
+    (10, 'http://example.com/image52.gif', '640x480', 'GIF', 'Retro', 5),
+    (11, 'http://example.com/image53.gif', '640x480', 'GIF', 'Libretto', 5),
+	(12, 'http://example.com/image61.gif', '640x480', 'GIF', 'Fronte', 6),
+    (13, 'http://example.com/image62.gif', '640x480', 'GIF', 'Retro', 6),
+    (14, 'http://example.com/image71.svg', '1280x720', 'SVG', null, 7);
 
 -- Popolazione tabella "traccia"
 insert into traccia (ID, titolo, durata, ID_disco) values
-    (1, 'Traccia 1', '00:03:30', 1),
-    (2, 'Traccia 2', '00:04:15', 1),
-    (3, 'Traccia 3', '00:05:10', 2),
-    (4, 'Traccia 4', '00:02:45', 3);
+    (1, 'Per essere vivi', '00:01:54', 1),
+    (2, 'La mia voce', '00:02:56', 1),
+    (3, 'Brutti sogni', '00:02:57', 1),
+    (4, 'Exit', '00:02:11', 1),
+    (5, 'Effetto domino', '00:02:12', 1),
+    (6, 'A Silvia', '00:02:12', 1),
+    (7, 'Animal', '00:02:07', 1),
+    (8, 'Inferno', '00:03:01', 1),
+    (9, 'Ti am*', '00:01:42', 1),
+    (10, 'Fame', '00:03:42', 1),
+    (11, 'Gli occhi della tigre', '00:02:46', 1),
+    (12, 'Traccia 2', '00:04:15', 2),
+    (13, 'Traccia 3', '00:05:10', 3),
+    (14, 'Traccia 4', '00:02:45', 4);
 
 -- Popolazione tabella "artista"
 insert into artista (ID, nomeArte, biografia) values
-    (1, 'Artista 1', 'Biografia artista 1'),
-    (2, 'Artista 2', 'Biografia artista 2'),
-    (3, 'Artista 3', 'Biografia artista 3');
-
+    (1, 'Nayt', 'Nayt, pseudonimo di William Mezzanotte, è un rapper italiano nato a Isernia, classe ’94. Cresce a Roma dove sin da giovanissimo comincia a far circolare il suo nome: il primo singolo No Story viene pubblicato a febbraio 2011, con strumentale di 3D.'),
+    (2, '3D', null),
+    (3, 'Tedua', 'Il vero nome di Tedua è Mario Molinari. Nato a Genova il 21 febbraio 1994 sotto il segno dei Pesci.'),
+	(4, 'Sfera Ebbasta', null),
+    (5, 'Tauro Boys', 'gruppo musicale'),
+    (6, 'MadMan', null);
+    
 -- Popolazione tabella "ruolo"
 insert into ruolo (nome) values
     ('Cantante'),
     ('Chitarrista'),
     ('Batterista'),    
     ('Pianista'),
-    ('Produttore');
+    ('Produttore'),
+    ('Band');
 
 -- Popolazione tabella "condivisa"
 insert into condivisa (ID_collezione, ID_collezionista) values
-    (1, 2),
-    (2, 1),
+    (2, 4),
+    (3, 2),
     (3, 3);
 
 -- Popolazione tabella "autore"
 insert into autore (ID_disco, ID_artista, nomeRuolo) values
     (1, 1, 'Cantante'),
-    (1, 2, 'Chitarrista'),
-    (2, 2, 'Cantante'),
-    (3, 3, 'Cantante'),
-    (3, 1, 'Chitarrista'),
-    (3, 2, 'Batterista');
+    (1, 2, 'Produttore'),
+    (2, 3, 'Cantante'),
+    (3, 4, 'Cantante'),
+    (4, 5, 'Band');
 
 -- Popolazione tabella "collaborazione"
 insert into collaborazione (ID_traccia, ID_artista, nomeRuolo) values
-    (1, 3, 'Cantante'),
-    (2, 1, 'Chitarrista'),
-    (3, 2, 'Cantante'),
-    (4, 3, 'Batterista');
+	(10, 6, 'Cantante');
