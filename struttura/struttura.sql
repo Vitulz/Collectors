@@ -27,7 +27,7 @@ create table disco (
 	ID int unsigned primary key auto_increment,
     titolo varchar(50) not null,
     etichetta varchar(50) not null,
-    annoUscita tinyint unsigned not null,
+    annoUscita smallint unsigned not null,
     nomeGenere varchar(50) not null,
     ID_collezione int unsigned not null,
     foreign key (nomeGenere) references genere(nome) on delete restrict on update cascade,
@@ -42,14 +42,15 @@ create table formato (
 
 create table copia (
 	ID int unsigned primary key auto_increment,
-    numeroBarcode tinyint unsigned,
+    numeroBarcode char(13),
     numeroCopia int unsigned,
     nomeFormato varchar(50) not null,
     statoDiConservazione enum('nuovo','eccellente','buono','discreto','rovinato'),
     ID_disco int unsigned not null,
     foreign key (nomeFormato) references formato(nome) on delete restrict on update cascade,
     foreign key (ID_disco) references disco(ID) on delete cascade on update cascade,
-    unique(numeroCopia, ID_disco)
+    unique(numeroCopia, ID_disco),
+    check(char_length(numeroBarcode) = 13)
 );
 
 create table posizione (
