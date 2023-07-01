@@ -1,7 +1,7 @@
 drop database if exists collectors;
 create database collectors;
 
-use collectors;
+use collectors; 
 
 create table collezionista (
 	ID int unsigned primary key auto_increment,
@@ -43,7 +43,7 @@ create table formato (
 create table copia (
 	ID int unsigned primary key auto_increment,
     numeroBarcode char(13),
-    numeroCopia int unsigned,
+    numeroCopia int unsigned not null auto_increment,
     nomeFormato varchar(50) not null,
     statoDiConservazione enum('nuovo','eccellente','buono','discreto','rovinato'),
     ID_disco int unsigned not null,
@@ -117,3 +117,21 @@ create table collaborazione (
     foreign key (ID_artista) references artista(ID) on delete cascade on update cascade,
     foreign key (nomeRuolo) references ruolo(nome) on delete restrict on update cascade
 );
+
+drop role if exists 'collezionista';
+create role 'collezionista';
+grant insert, update, delete, select on collectors.collezionista to 'collezionista'; 
+grant insert, update, delete, select on collectors.collezione to 'collezionista';
+grant insert, update, delete, select on collectors.disco to 'collezionista';
+grant insert, update, delete, select on collectors.copia to 'collezionista';
+grant insert, update, delete, select on collectors.immagine to 'collezionista';
+grant insert, update, delete, select on collectors.traccia to 'collezionista';
+grant insert, update, delete, select on collectors.artista to 'collezionista';
+grant insert, update, delete, select on collectors.condivisa to 'collezionista';
+grant insert, update, delete, select on collectors.autore to 'collezionista';
+grant insert, update, delete, select on collectors.collaborazione to 'collezionista';
+
+drop user if exists 'pippone'@'localhost'; 
+create user 'pippone'@'localhost' identified by 'UrloDelSium12_';       
+grant 'collezionista' to 'pippone'@'localhost'; 
+grant 'collezionista' to 'pippone'@'localhost'; 
