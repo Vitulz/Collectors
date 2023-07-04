@@ -18,12 +18,12 @@ drop procedure if exists inserimentoDisco$
 create procedure inserimentoDisco(
 	in _titolo varchar(50), 
     in _etichetta varchar(50),
-    in _annoDiUscitsa smallint unsigned, 
+    in _annoUscitsa smallint unsigned, 
     in _nomeGenere varchar(50), 
     in _ID_collezione integer unsigned
 )
 begin
-	insert into disco(titolo, etichetta, annoDiUscita, nomeGenere, ID_collezione) values (_titolo, _etichetta, _annoDiUscita, _nomeGenere, _ID_collezione);
+	insert into disco(titolo, etichetta, annoUscita, nomeGenere, ID_collezione) values (_titolo, _etichetta, _annoUscita, _nomeGenere, _ID_collezione);
 end$
 
 -- Query_2b
