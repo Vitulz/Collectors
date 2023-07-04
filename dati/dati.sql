@@ -23,7 +23,7 @@ insert into collezionista (ID, nickname, email) values
     (4, 'Pippone', 'pippolos@example.com');
 
 -- Popolazione tabella "collezione"
-insert into collezione (ID, nome, visibilta, ID_collezionista) values
+insert into collezione (ID, nome, visibilita, ID_collezionista) values
     (1, 'S collezione 1', 'pubblica', 1),
     (2, 'N collezione', 'privata', 2),
     (3, 'S collezione 2', 'privata', 1),

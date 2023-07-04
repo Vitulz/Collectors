@@ -13,7 +13,7 @@ create table collezionista (
 create table collezione (
 	ID int unsigned primary key auto_increment,
     nome varchar(50) not null,
-    visibilta enum('pubblica', 'privata') default 'privata',
+    visibilita enum('pubblica', 'privata') default 'privata',
     ID_collezionista int unsigned not null,
     foreign key (ID_collezionista) references collezionista(ID) on delete cascade on update cascade,
     unique(nome, ID_collezionista)
@@ -43,7 +43,7 @@ create table formato (
 create table copia (
 	ID int unsigned primary key auto_increment,
     numeroBarcode char(13),
-    numeroCopia int unsigned not null auto_increment,
+    numeroCopia int unsigned not null,
     nomeFormato varchar(50) not null,
     statoDiConservazione enum('nuovo','eccellente','buono','discreto','rovinato'),
     ID_disco int unsigned not null,
