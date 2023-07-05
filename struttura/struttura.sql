@@ -76,7 +76,7 @@ create table traccia (
     durata time not null,
     ID_disco int unsigned not null,
     foreign key (ID_disco) references disco(ID) on delete cascade on update cascade,
-    unique(titolo, ID_disco)
+	unique(titolo, ID_disco)
 );
 
 create table artista (
