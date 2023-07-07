@@ -4,17 +4,38 @@ delimiter $
 
 -- procedure ausiliare 
 
+-- funzione per cercare un artista dato un nomeArte
+drop function if exists artistaByNomeArte$
+create function artistaByNomeArte (_nomeArte varchar(50)) returns integer unsigned deterministic
+begin
+	return (select a.ID from artista a where a.nomeArte = _nomeArte);
+end$
+    
+-- funzione per trovare il numero dell'ultima copia inserita di un disco
+drop function if exists maxNumCopia$ 
+create function maxNumCopia (_ID_disco integer unsigned) returns integer unsigned deterministic
+begin
+	return (select max(c.numeroCopia) from copia c join disco d on (d.ID = c.ID_disco));
+end$
+
+-- funzione per trovare il numero di barcode di una copia in un certo formato di un disco
+drop function if exists numeroBarcode$ 
+create function numeroBarcode (_nomeFormato varchar(50), _ID_disco integer unsigned) returns char(13) deterministic
+begin
+	return (select distinct c.numeroBarcode from copia c join disco d on (d.ID = c.ID_disco) where c.nomeFormato = _nomeFormato);
+end$
+
 -- procedura utile per copiare le tracce di un disco sorgente in un disco destinazione
 drop procedure if exists copiaTracce$
 create procedure copiaTracce (
-	in discoSorgente integer unsigned,
-    in discoDestinazione integer unsigned
+	in _discoSorgente integer unsigned,
+    in _discoDestinazione integer unsigned
 )
 begin
 	declare messaggio varchar(100);
 	declare tracce cursor for select traccia.titolo, traccia.durata
 							  from disco join traccia on (disco.ID = traccia.ID_disco) 
-                             where disco.ID = discoSorgente;
+                             where disco.ID = _discoSorgente;
                               
 	if (discoSorgente = null or discoDestinazione = null) then 
 		set messaggio = "id disco non presente";
@@ -32,7 +53,7 @@ begin
             ciclo:
 				loop
 					fetch tracce into titolo1, durata1; 
-					insert into traccia(titolo, durata, ID_disco) values (titolo1, durata1, discoDestinazione);
+					insert into traccia(titolo, durata, ID_disco) values (titolo1, durata1, _discoDestinazione);
 				end loop;
         end; 
 		close tracce; 
