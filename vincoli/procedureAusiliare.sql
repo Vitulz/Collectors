@@ -25,6 +25,77 @@ begin
 	return (select distinct c.numeroBarcode from copia c join disco d on (d.ID = c.ID_disco) where c.nomeFormato = _nomeFormato);
 end$
 
+-- procedura utile per copiare gli autori di un disco sorgente in un disco destinazione
+drop procedure if exists copiaAutori$
+create procedure copiaAutori (
+	in _discoSorgente integer unsigned,
+    in _discoDestinazione integer unsigned
+)
+begin
+	declare messaggio varchar(100);
+	declare autori cursor for select autore.ID_artista, autore.nomeRuolo
+							  from disco join autore on (disco.ID = autore.ID_disco) 
+                             where disco.ID = _discoSorgente;
+                              
+	if (_discoSorgente = null or _discoDestinazione = null) then 
+		set messaggio = "id disco non presente";
+        signal sqlstate '45000' set message_text = messaggio;
+	else
+    
+		open autori; 
+	
+     inserimento: 
+		begin
+			declare ID_artista1 integer unsigned; 
+            declare nomeRuolo1 varchar(50); 
+            
+            declare exit handler for not found begin end;
+            ciclo:
+				loop
+					fetch autori into ID_artista1, nomeRuolo1; 
+					insert into autore(ID_disco, ID_artista, nomeRuolo) values (_discoDestinazione, ID_artista1, nomeRuolo1);
+				end loop;
+        end; 
+		close autori; 
+	end if;
+end$
+
+-- procedura utile per copiare le collaborazioni di una traccia sorgente in una traccia destinazione
+drop procedure if exists copiaCollaborazioni$
+create procedure copiaCollaborazioni (
+	in _tracciaSorgente integer unsigned,
+    in _tracciaDestinazione integer unsigned
+)
+begin
+	declare messaggio varchar(100);
+	declare collaborazioni cursor for select collaborazione.ID_artista, collaborazione.nomeRuolo
+							  from traccia join collaborazione on (traccia.ID = collaborazione.ID_traccia) 
+                             where traccia.ID = _tracciaSorgente;
+                              
+	if (_tracciaSorgente = null or _tracciaDestinazione = null) then 
+		set messaggio = "id disco non presente";
+        signal sqlstate '45000' set message_text = messaggio;
+	else
+    
+		open collaborazioni; 
+	
+     inserimento: 
+		begin
+			declare ID_artista1 integer unsigned; 
+            declare nomeRuolo1 varchar(50); 
+            
+            declare exit handler for not found begin end;
+            ciclo:
+				loop
+					fetch collaborazioni into ID_artista1, nomeRuolo1; 
+					insert into collaborazione(ID_traccia, ID_artista, nomeRuolo) values (_tracciaDestinazione, ID_artista1, nomeRuolo1);
+				end loop;
+        end; 
+		close collaborazioni; 
+	end if;
+end$
+
+
 -- procedura utile per copiare le tracce di un disco sorgente in un disco destinazione
 drop procedure if exists copiaTracce$
 create procedure copiaTracce (
@@ -33,11 +104,11 @@ create procedure copiaTracce (
 )
 begin
 	declare messaggio varchar(100);
-	declare tracce cursor for select traccia.titolo, traccia.durata
+	declare tracce cursor for select traccia.ID, traccia.titolo, traccia.durata
 							  from disco join traccia on (disco.ID = traccia.ID_disco) 
                              where disco.ID = _discoSorgente;
                               
-	if (discoSorgente = null or discoDestinazione = null) then 
+	if (_discoSorgente = null or _discoDestinazione = null) then 
 		set messaggio = "id disco non presente";
         signal sqlstate '45000' set message_text = messaggio;
 	else
@@ -46,14 +117,16 @@ begin
     
     inserimento: 
 		begin
-			declare titolo1 varchar(50); 
+			declare ID1 integer unsigned;
+            declare titolo1 varchar(50); 
             declare durata1 time; 
             
             declare exit handler for not found begin end;
             ciclo:
 				loop
-					fetch tracce into titolo1, durata1; 
+					fetch tracce into ID1, titolo1, durata1; 
 					insert into traccia(titolo, durata, ID_disco) values (titolo1, durata1, _discoDestinazione);
+                    call copiaCollaborazioni(ID1, last_insert_id());
 				end loop;
         end; 
 		close tracce; 
@@ -93,6 +166,7 @@ begin
 					fetch controllo into ID1, titolo1, etichetta1, annoUscita1;
 					if (not(titolo1 = new.titolo and etichetta1 = new.etichetta and annoUscita1 = new.annoUscita) or ID1 = new.ID) then iterate ciclo;
                     else
+						call copiaAutori(ID1, new.ID);
 						call copiaTracce(ID1, new.ID);
                         leave ciclo;
 					end if;

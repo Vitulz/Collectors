@@ -19,35 +19,18 @@ create procedure inserimentoDisco(
     in _etichetta varchar(50),
     in _annoUscitsa smallint unsigned, 
     in _nomeGenere varchar(50), 
-    in _ID_collezione integer unsigned,
-    in _nomeArte varchar(50),
-    in _nomeRuolo varchar(50)
+    in _ID_collezione integer unsigned
 )
 begin
-	declare _ID_artista integer unsigned;
-    
-	if _nomeRuolo is null then 
-		signal sqlstate '45000' set message_text = 'inserisci un ruolo';
-	elseif (select r.nomeRuolo from ruolo r where r.nomeRuolo = _nomeRuolo) is null then
-		signal sqlstate '45000' set message_text = 'nome ruolo non valido';
-	end if;
     if _nomeGenere is null then
 		signal sqlstate '45000' set message_text = 'inserisci un genere';
 	elseif (select g.nomeGenere from genere g where g.nomeGenere = _nomeGenere) is null then
 		signal sqlstate '45000' set message_text = 'nome  non valido';
 	end if;
-    
-		set _ID_artista = artistaByNomeArte(_nomeArte);
-        
-        if _ID_artista is null then
-			insert into artista(nomeArte) values (_nomeArte);
-		end if;
         
         insert into disco(titolo, etichetta, annoUscita, nomeGenere, ID_collezione) 
 			values (_titolo, _etichetta, _annoUscita, _nomeGenere, _ID_collezione);
 
-		insert into autore(ID_disco, ID_artista, nomeRuolo) 
-			values (last_insert_id(), _ID_artista, _nomeRuolo);
 end$
 
 -- Query 2b
@@ -99,6 +82,52 @@ create procedure inserimentoTraccia(
 begin 
 	insert into traccia(titolo, durata, ID_disco) values (_titolo, _durata, _ID_disco); 
 end $
+
+-- Query_2d
+drop procedure if exists inserimentoArtista$
+create procedure inserimentoArtista(
+	in _nomeArte varchar(50), 
+    in _biografia mediumtext 
+)
+begin 
+	insert into artista(nomeArte, biografia) values (_nomeArte, _biografia); 
+end $
+
+-- Query_2e
+drop procedure if exists inserimentoAutore$
+create procedure inserimentoAutore(
+	in _ID_disco integer unsigned,
+    in _ID_artista integer unsigned, 
+    in _nomeRuolo integer unsigned
+)
+begin 
+	insert into autore(ID_disco, ID_artista, nomeRuolo) values (_ID_disco, _ID_artista, _nomeRuolo); 
+end $
+
+-- Query_2e
+drop procedure if exists inserimentoCollaborazione$
+create procedure inserimentoCollaborazione(
+	in _ID_traccia integer unsigned,
+    in _ID_artista integer unsigned, 
+    in _nomeRuolo integer unsigned
+)
+begin 
+	insert into collaborazione(ID_traccia, ID_artista, nomeRuolo) values (_ID_traccia, _ID_artista, _nomeRuolo); 
+end $
+
+-- Query_2f
+drop procedure if exists inserimentoImmagine$
+create procedure inserimentoImmagine(
+	in _url varchar(767),
+    in _dimensione varchar(9), 
+    in _formato varchar(50),
+    in _nomePosizione varchar(50),
+    in _ID_copia integer unsigned
+)
+begin 
+	insert into immagine(url, dimensione, formato, nomePosizione, ID_copia) values (_url, _dimensione, _formato, _nomePosizione, _ID_copia); 
+end $
+
 
 -- Query_3
 
