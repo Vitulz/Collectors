@@ -22,10 +22,8 @@ create procedure inserimentoDisco(
     in _ID_collezione integer unsigned
 )
 begin
-    if _nomeGenere is null then
-		signal sqlstate '45000' set message_text = 'inserisci un genere';
-	elseif (select g.nomeGenere from genere g where g.nomeGenere = _nomeGenere) is null then
-		signal sqlstate '45000' set message_text = 'nome  non valido';
+    if _nomeGenere is null or not (select 1 from genere g where g.nomeGenere = _nomeGenere) then
+		signal sqlstate '45000' set message_text = 'genere non valido';
 	end if;
         
         insert into disco(titolo, etichetta, annoUscita, nomeGenere, ID_collezione) 
@@ -45,15 +43,11 @@ begin
 	declare numBar char(13);
     declare maxCopia integer unsigned;
     
-    if _nomeFormato is null then 
-		signal sqlstate '45000' set message_text = 'inserisci un formato';
-	elseif (select f.nomeFormato from formato f where f.nomeFormato = _nomeFormato) is null then
-		signal sqlstate '45000' set message_text = 'nome formato non valido';
+    if _nomeFormato is null or not (select 1 from formato f where f.nomeFormato = _nomeFormato) then 
+		signal sqlstate '45000' set message_text = 'formato non valido';
 	end if;
-    if _ID_disco is null then 
-		signal sqlstate '45000' set message_text = 'inserisci un disco';
-	elseif (select d.ID from disco d where d.ID = _ID_disco) is null then
-		signal sqlstate '45000' set message_text = 'disco non presente';
+    if _ID_disco is null or not (select 1 from disco d where d.ID = _ID_disco) then 
+		signal sqlstate '45000' set message_text = 'ID disco non valido';
 	end if;
 	
     set numBar = numeroBarcode(_nomeFormato, _ID_disco);
@@ -129,15 +123,114 @@ begin
 end $
 
 
--- Query_3
-
-
-
-
+-- Query_3a
+drop procedure if exists modificaVisibilita$
+create procedure modificaVisibilita (
+	in _ID_collezione integer unsigned
+)
+begin
+	declare visibilita1 varchar(50);
     
+	if _ID_collezione is null or not (select 1 from collezione where ID = _ID_collezione) then
+		signal sqlstate '45000' set message_text = 'ID collezione non valido';
+	end if;
     
+    select visibilita from collezione where ID = _ID_collezione into visibilita1;
     
+    if visibilita = 'pubblica' then 
+		update collezione set visibilita = 'privata' where ID = _ID_collezione;
+	else
+		update collezione set visibilita = 'pubblica' where ID = _ID_collezione;
+		delete from condivisa where ID_collezione = _ID_collezione;
+	end if;
+end$
+
+-- Query_3b
+drop procedure if exists inserimentoCondivisione$
+create procedure inserimentoCondivisione (
+	in _ID_collezione integer unsigned,
+    in _ID_collezionista integer unsigned
+)
+begin
+	insert into condivisa(ID_collezione, ID_collezionista) values (_ID_collezione, _ID_collezionista);
+end$
+
+-- Query_4a
+drop procedure if exists rimozioneDisco$
+create procedure rimozioneDisco (
+in _ID_disco integer unsigned
+)
+begin
+	if _ID_disco is null or not (select 1 from disco where ID = _ID_disco) then
+		signal sqlstate '45000' set message_text = 'ID disco non valido';
+	end if;
+    delete from disco d where ID = _ID_disco;
+end$
+
+-- Query_4b
+drop trigger if exists rimozioneDisco$
+create trigger rimozioneDisco after delete on disco
+for each row
+begin
+	declare _ID_disco integer unsigned;
+    set _ID_disco = old.ID;
     
+	delete from collaborazione cl where cl.ID_traccia in (select t.ID from traccia t join disco d on (t.ID_disco = d.ID) where d.ID = _ID_disco);
+    delete from traccia	t where t.ID_disco = _ID_disco;
+    delete from autore a where a.ID_disco = _ID_disco;
+    delete from immagine i where i.ID_copia in (select cp.ID from copia cp join disco d on (cp.ID_disco = d.ID) where d.ID = _ID_disco);
+    delete from copia cp where cp.ID_disco = _ID_disco;
+end$
+
+-- Query_5a
+drop procedure if exists rimozioneCollezione$
+create procedure rimozioneCollezione (
+	in _ID_collezione integer unsigned
+)
+begin
+	if _ID_collezione is null or not (select 1 from collezione where ID = _ID_collezione) then
+		signal sqlstate '45000' set message_text = 'ID collezione non valido';
+	end if;
+    delete from collezione c where ID = _ID_collezione;
+end$
+
+-- Query_5b
+drop trigger if exists rimozioneCollezione$
+create trigger rimozioneCollezione after delete on collezione
+for each row
+begin
+	declare _ID_collezione integer unsigned;
+    set _ID_collezione = old.ID;
+    
+    delete from condivisa where ID_collezione = _ID_collezione;
+    delete from disco where ID_collezione = _ID_collezione;
+end$
+
+-- Query_6
+drop procedure if exists getDischiCollezione$
+create procedure getDischiCollezione (
+	in _ID_collezione integer unsigned
+)
+begin 
+	if _ID_collezione is null or not (select 1 from collezione where ID = _ID_collezione) then
+		signal sqlstate '45000' set message_text = 'ID collezione non valido';
+	end if;
+	select d.* from disco d join collezione c on (d.ID_collezione = c.ID) where c.ID = _ID_collezione;
+end$
+
+-- Query_7
+drop procedure if exists getTracklist$
+create procedure getTracklist (
+	in _ID_disco integer unsigned
+)
+begin 
+	if _ID_disco is null or not (select 1 from disco where ID = _ID_disco) then
+		signal sqlstate '45000' set message_text = 'ID disco non valido';
+    end if;
+	select t.* from traccia t join disco d on (t.ID_disco = d.ID) where d.ID = _ID_disco;
+end$
+    
+-- Query_8
     
 
 		
