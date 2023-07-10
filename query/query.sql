@@ -230,9 +230,128 @@ begin
 	select t.* from traccia t join disco d on (t.ID_disco = d.ID) where d.ID = _ID_disco;
 end$
     
--- Query_8
+-- Query_8a
+drop procedure if exists getDischiCollezionista$
+create procedure getDischiCollezionista (
+	in _ID_collezionista integer unsigned
+)
+begin 
+	if _ID_collezionista is null or not (select 1 from collezionista where ID = _ID_collezionista) then
+		signal sqlstate '45000' set message_text = 'ID collezionista non valido';
+	end if;
     
+    drop table if exists dischiCollezionista;
+	create temporary table dischiCollezionista as 
+		select d.* from collezionista cs join collezione cl on (cs.ID = cl.ID_collezionista) 
+										 join disco d on (cl.ID = d.ID_collezione) 
+                                         where cs.ID = _ID_collezionista and cl.visibilita = 'privata';
+end$
 
+-- Query_8b
+drop procedure if exists getDischiCondivisiCollezionista$
+create procedure getDischiCondivisiCollezionista (
+	in _ID_collezionista integer unsigned
+)
+begin 
+	if _ID_collezionista is null or not (select 1 from collezionista where ID = _ID_collezionista) then
+		signal sqlstate '45000' set message_text = 'ID collezionista non valido';
+	end if;
+    
+    drop table if exists dischiCondivisi;
+    create temporary table dischiCondivisi as
+		select d.* from collezionista cs join condivisa cn on (cs.ID = cn.ID_collezionista)
+										 join collezione cl on (cl.ID = cn.ID_collezione)
+                                         join disco d on (cl.ID = d.ID_collezione)
+										 where cs.ID = _ID_collezionista;
+end$
+
+-- Query_8c
+drop procedure if exists getDischiPubblici$
+create procedure getDischiPubblici ()
+begin 
+	drop table if exists dischiPubblici;
+    create temporary table dischiPubblici as 
+		select d.* from collezione cl join disco d on (cl.ID = d.ID_collezione)
+									  where cl.visibilita = 'pubblica';
+end$
+
+-- Quer_8d
+drop procedure if exists getDischi$
+create procedure getDischi (
+	in _nomeArte varchar(50),
+    in _titolo varchar(50),
+    in _ID_collezionista integer unsigned,
+    in _privata boolean,
+    in _condivisa boolean,
+    in _pubblica boolean
+)
+begin
+    case 
+		when (_nomeArte is null) and (_titolo is null) then
+			signal sqlstate '45000' set message_text = 'inserisci almeno uno tra nomeArte e titolo';
+		when (_ID_collezionista is null) and (_privata = true or _condivisa = true) then
+			signal sqlstate '45000' set message_text = 'inserisci un ID collezionista';
+		when (_privata = false and _condivisa = false and _pubblica = false) then 
+			signal sqlstate '45000' set message_text = 'seleziona una area di ricerca';
+		else
+			drop table if exists dischiCollezionista;
+			drop table if exists dischiCondivisi;
+			drop table if exists dischiPubblici;
+			create temporary table dischiCollezionista (ID int unsigned, titolo varchar(50), etichetta varchar(50), annoUscita smallint unsigned, nomeGenere varchar(50), ID_collezione int unsigned);
+			create temporary table dischiCondivisi (ID int unsigned, titolo varchar(50), etichetta varchar(50), annoUscita smallint unsigned, nomeGenere varchar(50), ID_collezione int unsigned);
+			create temporary table dischiPubblici (ID int unsigned, titolo varchar(50), etichetta varchar(50), annoUscita smallint unsigned, nomeGenere varchar(50), ID_collezione int unsigned);
+
+			if (_privata = true) then
+				call getDischiCollezionista(_ID_collezionista);
+			end if;
+			
+			if (_condivisa = true) then
+				call getDischiCondivisiCollezionista(_ID_collezionista);
+			end if;
+			
+			if (_pubblica = true) then 
+				call getDischiPubblici();
+			end if;
+			
+			case 
+				when (_nomeArte is not null) and (_titolo is null) then
+					select d.* from artista ar join autore au on (ar.ID = au.ID_artista)
+											   join (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d on (au.ID_disco = d.ID)
+											   where ar.nomeArte = _nomeArte;
+				when (_nomeArte is null) and (_titolo is not null) then
+					select d.* from (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d 
+											   where d.titolo = _titolo;
+				else
+					select d.* from artista ar join autore au on (ar.ID = au.ID_artista)
+											   join (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d on (au.ID_disco = d.ID)
+											   where ar.nomeArte = _nomeArte and d.titolo = _titolo;
+			end case;
+	end case;
+end$    
+
+-- Query_9
+drop function if exists isCollezioneVisibile$
+create function isCollezioneVisibile (_ID_collezionista integer unsigned, _ID_collezione integer unsigned) returns boolean deterministic
+begin
+	declare vis varchar(50);
+        
+	if (not (_ID_collezionista is not null and _ID_collezione is not null)) then return false;
+	end if;
+        
+	select visibilita from collezione where ID = _ID_collezione into vis;
+        
+	if (vis = 'pubblica') then return true;
+    end if;
+	if (_ID_collezionista = (select cs.ID from collezionista cs join collezione cl on (cs.ID = cl.ID_collezionista) where cl.ID = _ID_collezione)) then return true;
+	end if;
+    if (_ID_collezionista in (select co.ID_collezionista from collezione cl join condivisa co on (cl.ID = co.ID_collezione)
+																				 join collezionista cs on (cs.ID = co.ID_collezionista)
+																				 where cl.ID = _ID_collezione)) then return true;
+    end if;
+	return false;
+end$
+    
+        
 		
 
 
