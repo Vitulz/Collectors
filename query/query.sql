@@ -275,7 +275,7 @@ begin
 									  where cl.visibilita = 'pubblica';
 end$
 
--- Quer_8d
+-- Query_8d
 drop procedure if exists getDischi$
 create procedure getDischi (
 	in _nomeArte varchar(50),
@@ -314,18 +314,27 @@ begin
 			end if;
 			
 			case 
-				when (_nomeArte is not null) and (_titolo is null) then
-					select d.* from artista ar join autore au on (ar.ID = au.ID_artista)
-											   join (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d on (au.ID_disco = d.ID)
-											   where ar.nomeArte = _nomeArte;
+				when (_nomeArte is not null) and (_titolo is null) then 
+					drop table if exists returnTable; 
+                    create temporary table returnTable as (
+						select d.* from artista ar join autore au on (ar.ID = au.ID_artista)
+												join (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d on (au.ID_disco = d.ID)
+												where ar.nomeArte = _nomeArte);
 				when (_nomeArte is null) and (_titolo is not null) then
-					select d.* from (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d 
-											   where d.titolo = _titolo;
+					drop table if exists returnTable; 
+                    create temporary table returnTable as (
+						select d.* from (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d 
+												where d.titolo = _titolo);
 				else
-					select d.* from artista ar join autore au on (ar.ID = au.ID_artista)
-											   join (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d on (au.ID_disco = d.ID)
-											   where ar.nomeArte = _nomeArte and d.titolo = _titolo;
+					drop table if exists returnTable; 
+                    create temporary table returnTable as (
+						select d.* from artista ar join autore au on (ar.ID = au.ID_artista)
+												join (select * from dischiCollezionista union select * from dischiCondivisi union select * from dischiPubblici) as d on (au.ID_disco = d.ID)
+												where ar.nomeArte = _nomeArte and d.titolo = _titolo);
 			end case;
+            
+			select * from returnTable; 
+            
 	end case;
 end$    
 
@@ -333,14 +342,10 @@ end$
 drop function if exists isCollezioneVisibile$
 create function isCollezioneVisibile (_ID_collezionista integer unsigned, _ID_collezione integer unsigned) returns boolean deterministic
 begin
-	declare vis varchar(50);
-        
 	if (not (_ID_collezionista is not null and _ID_collezione is not null)) then return false;
 	end if;
         
-	select visibilita from collezione where ID = _ID_collezione into vis;
-        
-	if (vis = 'pubblica') then return true;
+	if ((select visibilita from collezione where ID = _ID_collezione ) = 'pubblica') then return true;
     end if;
 	if (_ID_collezionista = (select cs.ID from collezionista cs join collezione cl on (cs.ID = cl.ID_collezionista) where cl.ID = _ID_collezione)) then return true;
 	end if;
@@ -350,8 +355,118 @@ begin
     end if;
 	return false;
 end$
-    
-        
+
+-- Query_10
+drop procedure if exists contaBrani$
+create procedure contaBrani (
+	in _ID_artista integer unsigned,
+    out result integer unsigned
+)
+begin
+	call getDischi((select nomeArte from artista where artista.ID = _ID_artista), null , null, false, false, true); 
+    select count(*) from (select distinct t.titolo, t.durata from returnTable r join traccia t on (r.ID = t.ID_disco)) as a into result;
+end$
+
+-- Query_11
+drop procedure if exists contaMinutiArtista$
+create procedure contaMinutiArtista (
+	in _ID_artista integer unsigned, 
+    out result time
+)
+begin
+	call getDischi((select nomeArte from artista where artista.ID = _ID_artista), null , null, false, false, true);
+	select sec_to_time((sum(time_to_sec(durata)))) from (select distinct t.titolo, t.durata from returnTable r join traccia t on (r.ID = t.ID_disco)) as a into result;
+end$
+
+-- Query_12a
+drop procedure if exists numeroCollezioni$
+create procedure numeroCollezioni () 
+begin 
+	select cs.nickname, count(cl.ID) as numeroDiCollezioni from collezionista cs join collezione cl on (cs.ID = cl.ID_collezionista) group by cs.ID, cs.nickname; 
+end$
+
+-- Query_12b
+drop procedure if exists numeroDischiGenere; 
+create procedure numeroDischiGenere ()
+begin
+	select g.nome, count(d.ID) as numeroDiDischi from disco d join genere g on (g.nome = d.nomeGenere) group by g.nome;
+end$
+
+
+
+
+                                                        ▒▒                                                        
+                                                      ██████                                                      
+                                                  ██████████                                                      
+                                              ██▓▓██░░░░██                                                        
+                                        ██▓▓▓▓██░░░░░░▓▓                                                          
+                                    ██▓▓██░░░░░░░░░░████                                                          
+                                      ████░░░░░░░░░░██                                                            
+                                        ██▓▓░░░░░░░░██                                                            
+                                          ██░░░░░░▓▓██                                                            
+                                          ██▓▓░░░░██                                                              
+                                            ██▓▓░░██                ▓▓▓▓██      ▓▓▓▓▓▓▓▓▓▓                        
+                    ▓▓▓▓▓▓▓▓▓▓██              ██░░██        ▓▓▓▓▓▓████▒▒██▓▓▓▓████▒▒▒▒▒▒██▒▒                      
+                  ▓▓██▒▒▒▒▒▒▒▒██▓▓▓▓▓▓▓▓▓▓    ██████    ▓▓▓▓██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓██▓▓                      
+                ████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██▓▓▓▓░░████  ▓▓██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██  ░░▓▓                      
+              ▒▒██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██▒▒████▒▒██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓██    ▓▓                      
+          ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓██████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██      ▓▓                      
+          ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██      ████                    
+        ████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██      ░░▓▓                    
+        ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██      ░░▓▓                    
+      ████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████    ░░▓▓                    
+      ██▒▒▒▒▒▒████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██▒▒▒▒▒▒▒▒▒▒████    ░░████                  
+      ██▒▒▒▒██▒▒▒▒▒▒████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████▒▒▒▒▒▒▒▒████          ████                
+      ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██████████▒▒████              ████████          
+    ████▒▒▒▒▒▒▒▒▒▒▒▒██████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██████▒▒▒▒▒▒▒▒▒▒▒▒████        ████████                  ██          
+    ██▒▒▒▒▒▒▒▒▒▒▒▒████  ████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████▒▒▒▒▒▒▒▒▒▒██            ██  ████    ████        ██          
+    ██▒▒▒▒▒▒▒▒▒▒████      ████▒▒▒▒▒▒██████▒▒▒▒▒▒▒▒▒▒██▒▒▒▒▒▒▒▒██████████      ████▒▒▒▒████▒▒▓▓        ████        
+    ██▒▒▒▒▒▒▒▒▒▒██      ████████▒▒▒▒████▒▒▒▒▒▒▒▒▒▒▒▒██▒▒▒▒▒▒████████  ████      ██▒▒▒▒▒▒▒▒▒▒▒▒████      ████      
+  ████▒▒▒▒▒▒▒▒▒▒██    ████  ██████▒▒██▒▒▒▒▒▒▒▒▒▒▒▒▒▒██████████████████  ██    ████▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████  ████    
+  ██▒▒▒▒▒▒▒▒▒▒▒▒████  ████████████████████▒▒▒▒▒▒▒▒████  ██████  ██████████    ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████  ████  
+  ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒████  ██████████  ██▒▒██████▒▒██████  ██████████████████  ████▒▒▒▒▒▒████▒▒▒▒▒▒▒▒▒▒▒▒▒▒██████████
+  ██▒▒▒▒▒▒████▒▒▒▒▒▒████  ██████  ████▒▒▒▒▒▒████▒▒▒▒██████████████████████████▒▒▒▒▒▒▒▒▒▒██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██████
+  ██▒▒▒▒▒▒██▒▒▒▒▒▒▒▒▒▒██████████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████████████  ████▒▒▒▒▒▒▒▒▒▒████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██
+  ██▒▒▒▒▒▒██████▒▒▒▒▒▒▒▒▒▒██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██████        ████▒▒▒▒▒▒▒▒▒▒▒▒██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██
+  ██▒▒▒▒▒▒▒▒▒▒████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████████▒▒▒▒▒▒▒▒▒▒▒▒████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██
+  ██▓▓▒▒▒▒▒▒▒▒▒▒████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██
+    ██▒▒▒▒▒▒▒▒▒▒▒▒██████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████  ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████
+    ██▓▓▒▒▒▒▒▒▒▒▒▒▒▒████████████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████████  ████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██  
+      ████▒▒▒▒▒▒▒▒▒▒████░░      ██████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██████  ██    ████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████  
+        ████▒▒▒▒▒▒▒▒▒▒██████    ██  ████▒▒▒▒▒▒▒▒████████████▒▒██████      ████  ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████    
+          ████▒▒▒▒▒▒▒▒▒▒▒▒████  ██  ░░██▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░▓▓██░░░░      ████▓▓██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓██      
+            ██▓▓▒▒▒▒▒▒▒▒▒▒▒▒██  ██  ████░░░░░░██            ██░░    ▓▓▓▓▓▓██████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██        
+              ██▓▓▒▒▒▒▒▒▒▒▒▒██▓▓██▓▓██████    ██    ▓▓▓▓▓▓▓▓██▓▓▓▓▓▓████░░████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓██        
+                ████▒▒▒▒▒▒▒▒▒▒██████    ██████████████  ██  ██        ██████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████          
+                ░░░░▓▓▓▓▒▒▒▒▒▒▒▒████▓▓▓▓░░░░░░████░░░░  ░░  ██  ▓▓▓▓▓▓██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██░░          
+                    ░░██▓▓▒▒▒▒▒▒▒▒▒▒▒▒████  ██████▓▓░░    ████▓▓██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓██            
+                        ██▒▒▒▒▒▒▒▒▒▒▒▒▒▒██▓▓██▒▒▒▒▒▒██▓▓▓▓██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██░░            
+                        ░░██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓░░              
+                          ██▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████                  
+                            ██████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████▓▓                    
+                            ░░  ██▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒██░░                      
+                                  ░░██▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓██                          
+                                      ██▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▓▓████░░██▒▒▒▒▒▒▒▒▒▒▒▒▒▒██░░░░░░                          
+                                                    ██████        ████▒▒▒▒██████                                  
+                                                    ██              ████████                                      
+
+
+
+
+
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
 		
 
 
