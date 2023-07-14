@@ -134,7 +134,7 @@ begin
 end$
 
 
--- trigger per automatizzare l'inserimento delle tracce di un disco già inserito in un'altra collezione di un utente
+-- trigger per automatizzare l'inserimento delle tracce, degli autori e delle collaborazioni di un disco già inserito in un'altra collezione di un utente
 drop trigger if exists discoEsistente$ 
 create trigger discoEsistente after insert on disco
 for each row 
