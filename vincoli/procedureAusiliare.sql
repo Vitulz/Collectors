@@ -15,7 +15,7 @@ end$
 drop function if exists maxNumCopia$ 
 create function maxNumCopia (_ID_disco integer unsigned) returns integer unsigned deterministic
 begin
-	return (select max(c.numeroCopia) from copia c join disco d on (d.ID = c.ID_disco));
+	return (select max(c.numeroCopia) from copia c join disco d on (d.ID = c.ID_disco) where d.ID = _ID_disco);
 end$
 
 -- funzione per trovare il numero di barcode di una copia in un certo formato di un disco

@@ -1,7 +1,8 @@
 use collectors;
 
--- Query_1
 delimiter $ 
+
+-- Query_1
 drop procedure if exists inserimentoCollezione$ 
 create procedure inserimentoCollezione(
 	in _nome varchar(50),
@@ -98,7 +99,7 @@ begin
 	insert into autore(ID_disco, ID_artista, nomeRuolo) values (_ID_disco, _ID_artista, _nomeRuolo); 
 end $
 
--- Query_2e
+-- Query_2f
 drop procedure if exists inserimentoCollaborazione$
 create procedure inserimentoCollaborazione(
 	in _ID_traccia integer unsigned,
@@ -109,7 +110,7 @@ begin
 	insert into collaborazione(ID_traccia, ID_artista, nomeRuolo) values (_ID_traccia, _ID_artista, _nomeRuolo); 
 end $
 
--- Query_2f
+-- Query_2g
 drop procedure if exists inserimentoImmagine$
 create procedure inserimentoImmagine(
 	in _url varchar(767),
